@@ -1,0 +1,63 @@
+{% extends 'tienda/base.html' %}
+{% load static %}
+
+{% block titulo %}Inicio{% endblock %}
+
+{% block contenedor %}
+    <h1 class="titul">Inicio</h1>
+
+    <div class="mb-3 mt-5 w-100 h-100 ml-0 mr-0 mx-auto"  style="max-width: 1200px;">
+        {% if data %}
+            {% csrf_token %}
+            <div class="btn-group btn-group-lg" role="group" aria-label="Basic outlined example">
+                <a href="{% url 'inicio' %}" type="button" class="btn btn-outline-success">Ver todos</a>
+                {%  for c in cat %}
+                    <a href="{% url 'inicio' %}?cat={{ c.id }}" type="button" class="btn btn-outline-success">{{ c.nombre }}</a>
+                {% endfor %}
+            </div>
+        {%  for p in data %}
+            {% if forloop.first %}
+                <div class="row" style="clear:left;">
+            {% endif %}
+
+            {% if forloop.counter0|divisibleby:4 %}
+                </div>
+                <div class="row" style="clear:left;">
+            {% endif %}
+
+            <div class="card m-2 p-0" style="float:left;width: 18rem;">
+                <img src="{{ p.foto.url }}" class="card-img-top" alt="{{ p.nombre }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ p.nombre }}</h5>
+                    <p class="card-text">
+                        {{ p.precio }}
+                    </p>
+                </div>
+                <form>
+                    <input type="hidden" name="id" id="id_{{ p.id }}" value="{{ p.id }}" />
+                    <input type="number" class="form-control    " name="cantidad" id="cantidad_{{ p.id }}" min="1" max="{{ p.inventario }}" value="1" size="3" />
+                    <button type="button" onclick="add_carrito(`{% url 'carrito_add' %}`, {{ p.id }});" class="btn btn-info">Add Carrito</button>
+                </form>
+                <div class="card-footer">
+                    <small class="text-body-secondary">{{ p.categoria }}</small>
+                </div>
+            </div>
+
+            {% if forloop.last %}
+                </div>
+            {% endif %}
+
+        {% endfor %}
+        {% else %}
+        <div class="btn-group btn-group-lg" role="group" aria-label="Basic outlined example">
+            <a href="{% url 'inicio' %}" type="button" class="btn btn-outline-success">Ver todos</a>
+            {%  for c in cat %}
+                <a href="{% url 'inicio' %}?cat={{ c.id }}" type="button" class="btn btn-outline-success">{{ c.nombre }}</a>
+            {% endfor %}
+        </div>
+        <div class="row p-3" style="clear:left;">
+            No hay productos en este categoría...
+        </div>
+        {% endif %}
+    </div>
+{% endblock %}
