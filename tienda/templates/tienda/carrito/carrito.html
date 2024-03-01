@@ -6,30 +6,31 @@
     <table class="table">
         <thead>
             <tr>
-                <th>Acción</th>
                 <th>Producto</th>
                 <th>Cantidad</th>
                 <th>Subtotal</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             {% for p in request.session.carrito %}
             <tr>
                 <td>
-                    <a class="btn btn-danger" href="javascript:remove_producto(`{% url 'carrito_eliminar' p.id %}`)">
+                    <img src="{{ p.foto }}" width="80%"/><br>
+                    {{ p.producto }} <br>Precio: (${{ p.precio|floatformat:0|intcomma }})
+                </td>
+                <td>
+                    <input type="hidden" name="id" id="id_{{ p.id }}" value="{{ p.id }}" />
+                    <input oninput="actualizar_totales_carrito(`{% url 'actualizar_totales_carrito' p.id %}`, {{ p.id }});" type="number" name="cantidad" id="cantidad_carrito_{{ p.id }}" min="1" max="{{ p.inventario }}" value="{{ p.cantidad }}" size="3" class="form-control" />
+                </td>
+                <td class="text-end">${{ p.subtotal|intcomma }}</td>
+                <td>
+                    <a class="btn btn-danger" href="javascript:eliminar_item_carrito(`{% url 'carrito_eliminar' p.id %}`)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-x-lg" viewBox="0 0 16 16">
                             <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
                         </svg>
                     </a>
                 </td>
-                <td>
-                    <img src="{{ p.foto }}" width="20%"/><br>
-                    {{ p.producto }}
-                </td>
-                <td>
-                    <input type="number" min="1" class="form-control" value="{{ p.cantidad }}">
-                </td>
-                <td class="text-end">${{ p.subtotal|intcomma }}</td>
             </tr>
             {% endfor %}
             <tr>
@@ -41,7 +42,7 @@
     </table>
     <br>
     <div class="d-flex justify-content-between">
-        <a class="btn btn-success btn-block">
+        <a class="btn btn-success btn-block" href="{% url 'crear_venta' %}">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-currency-dollar" viewBox="0 0 16 16">
                 <path d="M4 10.781c.148 1.667 1.513 2.85 3.591 3.003V15h1.043v-1.216c2.27-.179 3.678-1.438 3.678-3.3 0-1.59-.947-2.51-2.956-3.028l-.722-.187V3.467c1.122.11 1.879.714 2.07 1.616h1.47c-.166-1.6-1.54-2.748-3.54-2.875V1H7.591v1.233c-1.939.23-3.27 1.472-3.27 3.156 0 1.454.966 2.483 2.661 2.917l.61.162v4.031c-1.149-.17-1.94-.8-2.131-1.718zm3.391-3.836c-1.043-.263-1.6-.825-1.6-1.616 0-.944.704-1.641 1.8-1.828v3.495l-.2-.05zm1.591 1.872c1.287.323 1.852.859 1.852 1.769 0 1.097-.826 1.828-2.2 1.939V8.73z"/>
             </svg>

@@ -289,6 +289,7 @@ def carrito_add(request):
 							"id": q.id,
 							"foto": q.foto.url,
 							"producto": q.nombre,
+							"precio": q.precio,
 							"cantidad": int(cantidad),
 							"subtotal": int(cantidad) * q.precio
 						}
@@ -343,12 +344,96 @@ def carrito_eliminar(request, id):
 			carrito.remove(p)
 			request.session["carrito"] = carrito
 			request.session["items"] = len(carrito)
-	return redirect('inicio')
+	return redirect('carrito_ver')
 
 def vaciar_carrito(request):
 	request.session["carrito"] = []
 	request.session["items"] = []
 	return redirect('inicio')
+
+def actualizar_totales_carrito(request, id_producto):
+	carrito = request.session.get("carrito", False)
+	cantidad = request.GET.get("cantidad")
+
+	if carrito != False:
+		for i, item in enumerate(carrito):
+			if item["id"] == id_producto:
+				item["cantidad"] = int(cantidad)
+				item["subtotal"] = int(cantidad) * item["precio"]
+				break
+		else:
+			messages.warning(request, "No se encontró el ítem en el carrito.")
+
+	request.session["items"] = len(carrito)
+	request.session["carrito"] = carrito
+	return redirect("carrito_ver")
+
+
+def crear_venta(request):
+	try:
+		logueo = request.session.get("logueo")
+
+		user = Usuario.objects.get(pk=logueo["id"])
+		nueva_venta = Venta.objects.create(usuario=user)
+
+		carrito = request.session.get("carrito", [])
+		for p in carrito:
+			producto = Producto.objects.get(pk=p["id"])
+			cantidad = p["cantidad"]
+
+			detalle_venta = DetalleVenta.objects.create(
+                venta=nueva_venta,
+                producto= producto,
+                cantidad= cantidad,
+                precio_historico=producto.precio,
+            )
+
+			producto.inventario -= cantidad
+			producto.save()
+			
+			request.session["carrito"] = []
+			request.session["items"] = 0
+		
+		messages.success(request, "Venta realizada correctamente!")
+
+	except Exception as e:
+		messages.error(request, f"Ocurrió un Error: {e}")
+
+	return redirect('inicio')
+
+def ver_ventas(request):
+	logueo = request.session.get("logueo")
+	user = Usuario.objects.get(pk=logueo["id"])
+
+	if user.rol == 3:
+		venta = Venta.objects.filter(usuario=user)
+		contexto = {"data":venta}
+		return render(request, "tienda/carrito/ventas.html", contexto)
+	else:
+		venta = Venta.objects.all()
+		contexto = {"data":venta}
+		return render(request, "tienda/carrito/ventas.html", contexto)
+
+def ver_detalles(request, id):
+	venta = Venta.objects.get(pk=id) 
+	detalles = DetalleVenta.objects.filter(venta=venta.id)
+	contexto = {"data":detalles}
+	return render(request, "tienda/carrito/detalles.html", contexto)
+
+
+
+
+
+	
+
+
+
+
+		
+		
+
+
+
 
 
 	

@@ -88,3 +88,63 @@ function ver_carrito(url){
         location.href="/tienda/inicio/";
     });
 }
+
+function eliminar_item_carrito(url){
+    contenido = $("#respuesta_carrito")
+    items_carrito = $("#items_carrito")
+    loader = $("loader")
+
+    loader.removeClass("d-none");
+    loader.addClass("d-block");
+
+    $.ajax({
+        url: url,
+    })
+    .done(function(respuesta){
+
+        if (respuesta != "Error"){
+
+            loader.removeClass("d-block");
+            loader.addClass("d-none");
+            // Pintar respuesta en offCanvas
+            contenido.html(respuesta);  
+        }
+        else{
+            location.href="/tienda/inicio/";
+        }
+    })
+    .fail(function(respuesta){
+        location.href="/tienda/inicio/";
+    });
+}
+
+function actualizar_totales_carrito(url, id){
+    contenido = $("#respuesta_carrito")
+    loader = $("#loader")
+    cantidad = $("#cantidad_carrito_"+id)
+
+    loader.removeClass("d-none");
+    loader.addClass("d-block");
+
+    $.ajax({
+        url: url,
+        type: "GET",
+        data: {"cantidad": cantidad.val()}
+    })
+    .done(function(respuesta){
+
+        if (respuesta != "Error"){
+
+            loader.removeClass("d-block");
+            loader.addClass("d-none");
+            // Pintar respuesta en offCanvas
+            contenido.html(respuesta);
+        }
+        else{
+            location.href="/tienda/inicio/";
+        }
+    })
+    .fail(function(respuesta){
+        location.href="/tienda/inicio/";
+    });
+}

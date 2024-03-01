@@ -1,0 +1,31 @@
+{% extends 'tienda/base.html' %}
+
+{% block titulo %}Ventas{% endblock %}
+
+{% load humanize %}
+
+{% block contenedor %}
+    <br>
+    <h1>Detalle de Venta</h1>
+        <br>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID Venta</th>
+                    <th>Productos</th>
+                    <th>Cantidad</th>
+                    <th>Precio historico</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in data %}
+                <tr>
+                    <td>{{ v.venta }}</td>
+                    <td>{{ v.producto }}</td>
+                    <td>{{ v.cantidad }}</td>
+                    <td>{{ v.precio_historico|floatformat:0|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+{% endblock %}

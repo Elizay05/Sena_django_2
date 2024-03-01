@@ -1,0 +1,45 @@
+{% extends 'tienda/base.html' %}
+
+{% block titulo %}Ventas{% endblock %}
+
+{% load humanize %}
+
+{% block contenedor %}
+    <br>
+    <h1>Historial de Ventas</h1>
+        <br>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 150px; text-align: center;">ID</th>
+                    <th>Fecha Venta</th>
+                    <th>Usuario</th>
+                    <th>Estado</th>
+                    <th>Detalles</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in data %}
+                <tr>
+                    <td style="text-align: center;">{{ v.id }}</td>
+                    <td>{{ v.fecha_venta }}</td>
+                    <td>{{ v.usuario }}</td>
+                    {% if request.session.logueo.rol == 3 %}
+                        <td>{{ v.get_estado_display }}</td>
+                    {% else %}
+                    <td>
+                        <select class="form-select" name="estado" style="width:150px">
+                            {% for e in v.ESTADOS %}
+                                <option value="e.0" {% if e == e.0 %}selected{% endif %}>{{ e.1 }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <a class="btn btn-info btn-block" href="{% url 'ver_detalles' v.id %}">Ver detalles</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+{% endblock %}
