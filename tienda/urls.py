@@ -42,6 +42,7 @@ urlpatterns = [
 	path("ver_ventas/", views.ver_ventas, name="ver_ventas"),
 	path("ver_detalles/<int:id>/", views.ver_detalles, name="ver_detalles"),
 
+	path("prueba_correo/", views.prueba_correo, name="prueba_correo"),
 
 
 ]

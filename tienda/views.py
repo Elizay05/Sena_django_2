@@ -1,6 +1,11 @@
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.db import IntegrityError, transaction
+
+# Para tomar el from desde el settings
+from django.conf import settings
+from django.core.mail import BadHeaderError, EmailMessage
 
 # Importamos todos los modelos de la base de datos
 from .models import *
@@ -11,7 +16,9 @@ def index(request):
 	logueo = request.session.get("logueo", False)
 
 	if logueo == False:
-		return render(request, "tienda/login/login.html")
+		next = request.GET.get("next")
+		contexto = {"next": next}
+		return render(request, "tienda/login/login.html", contexto)
 	else:
 		return redirect("inicio")
 
@@ -33,7 +40,10 @@ def login(request):
 			request.session["carrito"] = []
 			request.session["items"] = 0
 			messages.success(request, f"Bienvenido {q.nombre}!!")
-			return redirect("inicio")
+			if request.GET.get('next'):
+				return HttpResponseRedirect(request.GET.get('next'))
+			else:
+				return redirect("inicio")
 		except Exception as e:
 			messages.error(request, "Error: Usuario o contraseña incorrectos...")
 			return redirect("index")
@@ -369,37 +379,44 @@ def actualizar_totales_carrito(request, id_producto):
 	return redirect("carrito_ver")
 
 
+@transaction.atomic
 def crear_venta(request):
+	carrito = request.session.get("carrito", False)
+	logueo = request.session.get("logueo", False)
 	try:
-		logueo = request.session.get("logueo")
+		# Genero encabezado de venta, para tener ID y guardar detalle
+		r = Venta(usuario=Usuario.objects.get(pk=logueo["id"]))
+		r.save()
 
-		user = Usuario.objects.get(pk=logueo["id"])
-		nueva_venta = Venta.objects.create(usuario=user)
+		for i, p in enumerate(carrito):
+			try:
+				pro = Producto.objects.get(pk=p["id"])
+				print(f"ok producto {p['producto']}")
+			except Producto.DoesNotExist:
+				# elimino el producto no existente del carrito...
+				carrito.pop(i)
+				request.session["carrito"] = carrito
+				request.session["items"] = len(carrito)
+				raise Exception(f"El producto '{p['producto']}' ya no existe")
 
-		carrito = request.session.get("carrito", [])
-		for p in carrito:
-			producto = Producto.objects.get(pk=p["id"])
-			cantidad = p["cantidad"]
+			if int(p["cantidad"]) > pro.inventario:
+				raise Exception(f"La cantidad del producto '{p['producto']}' supera el inventario")
 
-			detalle_venta = DetalleVenta.objects.create(
-                venta=nueva_venta,
-                producto= producto,
-                cantidad= cantidad,
-                precio_historico=producto.precio,
-            )
-
-			producto.inventario -= cantidad
-			producto.save()
-			
-			request.session["carrito"] = []
-			request.session["items"] = 0
-		
-		messages.success(request, "Venta realizada correctamente!")
-
+			det = DetalleVenta(
+				venta=r,
+				producto=pro,
+				cantidad=int(p["cantidad"]),
+				precio_historico=int(p["precio"])
+			)
+			det.save()
+			if not prueba_correo(r.id):
+				raise Exception ("Error al enviar correo.")
 	except Exception as e:
-		messages.error(request, f"Ocurrió un Error: {e}")
+		transaction.set_rollback(True)
+		messages.error(request, f"Error: {e}")
 
-	return redirect('inicio')
+	return redirect("inicio")
+
 
 def ver_ventas(request):
 	logueo = request.session.get("logueo")
@@ -414,12 +431,32 @@ def ver_ventas(request):
 		contexto = {"data":venta}
 		return render(request, "tienda/carrito/ventas.html", contexto)
 
+
+@login_requerido_id
 def ver_detalles(request, id):
 	venta = Venta.objects.get(pk=id) 
 	detalles = DetalleVenta.objects.filter(venta=venta.id)
 	contexto = {"data":detalles}
 	return render(request, "tienda/carrito/detalles.html", contexto)
 
+
+def prueba_correo(id):
+	destinatario = "sayiis2005@gmail.com"
+	mensaje = f"""
+		<h1 style='color:blue;'>Tienda virtual</h1>
+		<p>Su pedido está listo y en estado "creado".</p>
+		<a href='http://127.0.0.1:8000/tienda/detalle_venta/{id}/?next=tienda/detalle_venta/{id}/'>Detalles de la venta</a>
+		<p>Tienda ADSO, 2024</p>
+		"""
+	try:
+		msg = EmailMessage("Tienda ADSO", mensaje, settings.EMAIL_HOST_USER, [destinatario])
+		msg.content_subtype = "html"  # Habilitar contenido html
+		msg.send()
+		return HttpResponse("Correo enviado")
+	except BadHeaderError:
+		return HttpResponse("Encabezado no válido")
+	except Exception as e:
+		return HttpResponse(f"Error: {e}")
 
 
 
